@@ -1,6 +1,8 @@
 
 # ATM Cash Dispenser API
 
+[🇯🇵 日本語のREADMEはこちら](./README.ja.md)
+
 ## 🎯 What This Project Solves
 
 This project simulates a real-world ATM cash dispensing system under realistic constraints:
