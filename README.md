@@ -164,7 +164,7 @@ When a request fails, the API returns a standardized error contract featuring a 
 | Error Code (`code`) | Description / Trigger Condition |
 | --- | --- |
 | `INVALID_AMOUNT` | The requested amount is negative, zero, or structurally invalid. |
-| `LIMIT_EXCEEDS` | The requested amount exceeds the per-transaction limit (200,000 JPY). |
+| `LIMIT_EXCEEDS` | The requested amount exceeds the per-transaction limit (100,000 JPY). |
 | `NOT_DISPENSABLE` | The requested amount cannot be fulfilled using the remaining combination of vault inventory. |
 
 ---
