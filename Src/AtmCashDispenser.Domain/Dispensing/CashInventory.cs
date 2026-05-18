@@ -15,33 +15,28 @@ namespace AtmCashDispenser.Domain.Dispensing
             _inventory = new Dictionary<Denomination, int>(initial);
         }
 
-        public void Dispense(DispensePlan plan)
+        public DispenseResult CalcDispense(Money amount, ICashDispenseCalculator calculator)
         {
-            lock (_lock)
+            lock(_lock)
+            {
+                return calculator.Calculate(_inventory.AsReadOnly(), amount);
+            }
+        }
+
+        public void ApplyDispense(DispensePlan plan)
+        {
+            lock(_lock)
             {
                 foreach (var (denom, count) in plan.DispenseDetails)
                 {
-                    if (!_inventory.TryGetValue(denom, out var currentCount))
-                    {
-                        throw new InvalidOperationException($"システムに存在しない金種です: {denom.Value}円");
-                    }
-
-                    if (currentCount < count)
-                    {
-                        throw new InvalidOperationException("在庫不足");
-                    }
-                }
-
-                foreach (var (denom, count) in plan.DispenseDetails)
-                {
-                    _inventory[denom] -= count;
+                  _inventory[denom] -= count;
                 }
             }
         }
 
         public int GetCount(Denomination denomination)
         {
-            lock (_lock)
+            lock(_lock)
             {
                 return _inventory.TryGetValue(denomination, out var count) ? count : 0;
             }

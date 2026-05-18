@@ -15,12 +15,18 @@ builder.Services.AddSingleton<CashInventory>(sp =>
     {
         { Denomination.TenThousand, 10 },
         { Denomination.FiveThousand, 20 },
+        { Denomination.TwoThousand, 10 },
         { Denomination.Thousand, 50 },
         { Denomination.FiveHundred, 100 },
-        { Denomination.Hundred, 200 }
+        { Denomination.Hundred, 200 },
+        { Denomination.Fifty, 100 },
+        { Denomination.Ten, 100 },
+        { Denomination.Five, 100 },
+        { Denomination.One, 100 }
     };
     return new CashInventory(initialInventory);
 });
+builder.Services.AddSingleton<ICashDispenseCalculator, CashDispenseCalculator>();
 builder.Services.AddTransient<DispenseCashUseCase>();
 
 var app = builder.Build();

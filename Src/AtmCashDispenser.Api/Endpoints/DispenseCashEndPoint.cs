@@ -8,27 +8,29 @@ namespace AtmCashDispenser.Api.Endpoints
     {
         public static void MapDispenseCash(this IEndpointRouteBuilder app)
         {
-            app.MapPost("/dispense", (
-                DispenseRequest request,
-                DispenseCashUseCase useCase) =>
+            app.MapPost("/transactions/dispense", Handle);
+        }
+
+        private static IResult Handle(
+            DispenseRequest request, 
+            DispenseCashUseCase useCase)
+        {
+            var result = useCase.Execute(request.Amount);
+
+            return result switch
             {
-                if (request.Amount <= 0)
-                {
-                    return Results.BadRequest("出金金額は1円以上にしてください");
-                }
-
-                var result = useCase.Execute(request.Amount);
-
-                return result switch
-                {
-                    DispenseUseCaseResult.Success success => Results.Ok(new DispenseResponse(
-                        success.DispenseDetails.Select(kvp => new DispenseItem(kvp.Key, kvp.Value))
-                        .ToList()
-                    )),
-                    DispenseUseCaseResult.Failure failure => Results.BadRequest(failure.Reason),
-                    _ => Results.StatusCode(500)
-                };
-            });
+                DispenseUseCaseResult.Success success => Results.Ok(new DispenseResponse(
+                    success.TransactionId.Value,
+                    success.DispenseDetails
+                    .Select(x => new DispenseItem(x.Denomination, x.Count))
+                    .ToList()
+                )),
+                DispenseUseCaseResult.Failure failure => Results.BadRequest(new ErrorResponse(
+                    failure.Error.Code,
+                    failure.Error.Message
+                )),
+                _ => Results.StatusCode(500)
+            };
         }
     }
 }

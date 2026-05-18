@@ -19,6 +19,8 @@ It focuses on solving **consistency and correctness under concurrent state mutat
 This project was fully designed and implemented from scratch to demonstrate a deep understanding of:
 
 - **Strong domain modeling** with strict invariant enforcement at the type level.
+- **Optimal Combination Search**: Utilizes a **Backtracking (recursive search) algorithm** instead of a naive Greedy approach to precisely determine dispensing combinations under complex inventory limitations.
+- **Decoupled Architecture**: Abstracted the core processing logic via the **`ICashDispenseCalculator`** interface to maximize testability and scalability.
 - **Safe handling of shared mutable state** in a high-concurrency web environment.
 - **Robust error handling via the Result Pattern**, eliminating the performance overhead of domain exceptions.
 - **Clear separation of concerns** utilizing a three-tier layered architecture (DDD-inspired).
@@ -107,7 +109,7 @@ This repository demonstrates complete test-driven confidence by maintaining thre
 
 ## 📡 API Usage
 
-### `POST /dispense`
+### `POST /transactions/dispense`
 
 Calculates and executes the optimal cash dispensing combination.
 
@@ -124,6 +126,7 @@ Calculates and executes the optimal cash dispensing combination.
 
 ```json
 {
+  "transactionId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "items": [
     {
       "denomination": 10000,
@@ -143,11 +146,26 @@ Calculates and executes the optimal cash dispensing combination.
 ```
 
 **Error Responses (400 Bad Request)**
-Returns a clean bad request context when:
 
-* The requested amount is negative or invalid.
-* The amount cannot be broken down using valid available denominations.
-* The internal ATM vault has insufficient inventory to fulfill the request.
+When a request fails, the API returns a standardized error contract featuring a unique string identifier (`code`) alongside a descriptive text (`message`) for granular client-side handling.
+
+* **Response Example (For `NOT_DISPENSABLE`)**
+
+```json
+{
+  "code": "NOT_DISPENSABLE",
+  "message": "払い出し不可"
+}
+
+```
+
+* **Error Code Registry**
+
+| Error Code (`code`) | Description / Trigger Condition |
+| --- | --- |
+| `INVALID_AMOUNT` | The requested amount is negative, zero, or structurally invalid. |
+| `LIMIT_EXCEEDS` | The requested amount exceeds the per-transaction limit (200,000 JPY). |
+| `NOT_DISPENSABLE` | The requested amount cannot be fulfilled using the remaining combination of vault inventory. |
 
 ---
 

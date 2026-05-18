@@ -40,7 +40,7 @@ namespace AtmCashDispenser.Domain.Tests
         }
 
         [Fact]
-        public void Dispense_在庫が十分な場合_在庫が減ること()
+        public void CalcDispense_在庫が十分な場合_在庫が減ること()
         {
             // Arrange
             var initial = new Dictionary<Denomination, int>
@@ -49,22 +49,20 @@ namespace AtmCashDispenser.Domain.Tests
                 { Denomination.FiveThousand, 5 }
             };
             var inventory = new CashInventory(initial);
-            var plan = new DispensePlan(new Dictionary<Denomination, int>
-            {
-                { Denomination.TenThousand, 2 },
-                { Denomination.FiveThousand, 1 }
-            });
+            var calculator = new CashDispenseCalculator();
+            var amount = Money.Create(15000);
 
             // Act
-            inventory.Dispense(plan);
+            var result = inventory.CalcDispense(amount, calculator);
 
             // Assert
-            Assert.Equal(3, inventory.GetCount(Denomination.TenThousand));
-            Assert.Equal(4, inventory.GetCount(Denomination.FiveThousand));
+            var sucessResult = Assert.IsType<DispenseResult.Success>(result);
+            Assert.Equal(1, sucessResult.Plan.DispenseDetails[Denomination.TenThousand]);
+            Assert.Equal(1, sucessResult.Plan.DispenseDetails[Denomination.FiveThousand]);
         }
 
         [Fact]
-        public void Dispense_在庫が不足している場合_InvalidOperationExceptionがスローされること()
+        public void CalcDispense_在庫が不足している場合_失敗結果が返されること()
         {
             // Arrange
             var initial = new Dictionary<Denomination, int>
@@ -72,37 +70,58 @@ namespace AtmCashDispenser.Domain.Tests
                 { Denomination.TenThousand, 1 }
             };
             var inventory = new CashInventory(initial);
-            var plan = new DispensePlan(new Dictionary<Denomination, int>
-            {
-                { Denomination.TenThousand, 2 }
-            });
+            var calculator = new CashDispenseCalculator();
+            var amount = Money.Create(20000);
 
-            // Act & Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => inventory.Dispense(plan));
-            Assert.Contains("在庫不足", ex.Message);
+            // Act
+            var result = inventory.CalcDispense(amount, calculator);
 
-            // 在庫は変更されないことを確認
-            Assert.Equal(1, inventory.GetCount(Denomination.TenThousand));
+            // Assert
+            var failureResult = Assert.IsType<DispenseResult.Failure>(result);
+            Assert.Equal(DispenseFailureReason.InsufficientCombination, failureResult.Reason);
         }
 
         [Fact]
-        public void Dispense_システムに存在しない金種を含む場合_InvalidOperationExceptionがスローされること()
+        public void ApplyDispense_成功結果を適用した場合_在庫が減ること()
         {
             // Arrange
             var initial = new Dictionary<Denomination, int>
             {
-                { Denomination.TenThousand, 5 }
+                { Denomination.TenThousand, 5 },
+                { Denomination.FiveThousand, 5 }
             };
             var inventory = new CashInventory(initial);
-            var plan = new DispensePlan(new Dictionary<Denomination, int>
+            var dispensePlan = new DispensePlan(new Dictionary<Denomination, int>
             {
-                { Denomination.TwoThousand, 1 }
+                { Denomination.TenThousand, 1 },
+                { Denomination.FiveThousand, 1 }
             });
-            // Act & Assert
-            var ex = Assert.Throws<InvalidOperationException>(() => inventory.Dispense(plan));
-            Assert.Contains("システムに存在しない金種", ex.Message);
-            // 在庫は変更されないことを確認
-            Assert.Equal(5, inventory.GetCount(Denomination.TenThousand));
+            var result = new DispenseResult.Success(dispensePlan);
+
+            // Act
+            inventory.ApplyDispense(dispensePlan);
+
+            // Assert
+            Assert.Equal(4, inventory.GetCount(Denomination.TenThousand));
+            Assert.Equal(4, inventory.GetCount(Denomination.FiveThousand));
+        }
+
+        [Fact]
+        public void ToString_在庫の内容が正しく表示されること()
+        {
+            // Arrange
+            var initial = new Dictionary<Denomination, int>
+            {
+                { Denomination.TenThousand, 5 },
+                { Denomination.FiveThousand, 3 }
+            };
+            var inventory = new CashInventory(initial);
+
+            // Act
+            var inventoryString = inventory.ToString();
+
+            // Assert
+            Assert.Equal("10000円: 5枚, 5000円: 3枚", inventoryString);
         }
     }
 }
